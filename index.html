@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f766e">
+    <title>BRIDGE — Run the C++. See the graph.</title>
+    <meta name="description"
+        content="BRIDGE: A hybrid architecture connecting OGDF (C++) to GAV-VR (C#) via automated Lua bindings. Features dual execution (native/network), thread-local Lua state management, and a whitelist security policy. Master thesis, University of Konstanz 2025.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="#top">BRIDGE<span class="brand-mark">/</span></a>
+            <nav class="nav" aria-label="Main">
+                <a class="nav-link" href="#demo">Live demo</a>
+                <a class="nav-link" href="#architecture">Architecture</a>
+                <a class="nav-link" href="#reproduce">Reproduce</a>
+                <a class="nav-link" href="#resources">Resources</a>
+            </nav>
+            <a class="btn btn--dark" href="#demo">Run comparison</a>
+        </div>
+    </header>
+
+    <main id="top">
+
+        <!-- ============ HERO ============ -->
+        <section class="hero container">
+            <p class="eyebrow">Master Thesis · University of Konstanz · 2025</p>
+            <h1 class="hero-title">Run the C++.<br><span class="accent">See the graph.</span></h1>
+            <p class="hero-sub">Connecting OGDF to GAV-VR via automated Lua bindings.</p>
+            <div class="hero-grid">
+                <div>
+                    <p class="hero-lede">
+                        BRIDGE is a hybrid architecture that connects the Open Graph Drawing Framework (OGDF) to the
+                        GAV-VR viewer. It uses an automated binding generation pipeline (LibClang AST analysis →
+                        sol2/Lua bindings), a dual execution strategy (native P/Invoke for low latency, network mode for
+                        cloud offloading), and thread-local Lua state management for memory safety.
+                    </p>
+                    <div class="badge-row">
+                        <span class="badge">No headset required</span>
+                        <span class="badge">Dual execution: native + network</span>
+                        <span class="badge">Thread-local Lua state (TLS)</span>
+                        <span class="badge">Whitelist security policy</span>
+                    </div>
+                </div>
+                <div class="hero-aside">
+                    <p class="label">Comparison</p>
+                    <p class="hero-aside-title">Direct OGDF <span class="accent">vs.</span> OGDF through BRIDGE</p>
+                    <p class="hero-aside-note">A headset is optional for verifying the result. The VR renderer is one
+                        consumer of the bridge, not a requirement for checking it.</p>
+                </div>
+            </div>
+            <p class="authors">Orkhan Igidov — University of Konstanz
+            </p>
+        </section>
+
+        <!-- ============ LIVE DEMO ============ -->
+        <section id="demo" class="band band--light">
+            <div class="container">
+                <div class="demo-head">
+                    <div>
+                        <p class="eyebrow">Live comparison</p>
+                        <h2>One case, two paths, side by side</h2>
+                        <p class="lead">Connect the Engine (Native or Network mode) and pick a Lua script, or paste your
+                            own script. The graphs below appear only after the Engine returns graph data.</p>
+                    </div>
+                    <div class="runner-url">
+                        <label class="label" for="runner-url">API secret key</label>
+                        <div class="url-row">
+                            <input id="runner-url" type="password" autocomplete="off" spellcheck="false"
+                                placeholder="Enter your generated API secret key">
+                            <button id="load-cases" class="btn btn--dark" type="button">Load cases</button>
+                        </div>
+                    </div>
+                </div>
+
+                <noscript>
+                    <p class="mode-note">The live demo requires JavaScript. All other sections work without it.</p>
+                </noscript>
+
+                <div class="tabs" role="tablist" aria-label="Execution mode">
+                    <button id="tab-case" class="tab is-active" role="tab" aria-selected="true"
+                        aria-controls="panel-case" type="button">Native mode</button>
+                    <button id="tab-custom" class="tab" role="tab" aria-selected="false" aria-controls="panel-custom"
+                        type="button">Network mode</button>
+                </div>
+
+                <div id="panel-case" class="mode-panel" role="tabpanel" aria-labelledby="tab-case">
+                    <label class="label" for="case-select">Lua script (from Scripts/ directory)</label>
+                    <select id="case-select">
+                        <option value="">Connect the Engine to load available scripts</option>
+                    </select>
+
+                    <div class="params-row">
+                        <div class="control">
+                            <label class="label" for="nodes">Layer distance</label>
+                            <div class="control-row">
+                                <input type="range" id="nodes" min="1" max="100" step="1" value="3">
+                                <span class="control-value" id="nodes-val">3</span>
+                            </div>
+                        </div>
+                        <div class="control">
+                            <label class="label" id="seed-label">Node distance</label>
+                            <div class="control-row">
+                                <div class="seed-box">
+                                    <button class="seed-btn" id="seed-dec" type="button"
+                                        aria-label="Decrease node distance">−</button>
+                                    <span class="seed-val" id="seed-val" role="spinbutton" aria-labelledby="seed-label"
+                                        aria-valuemin="1" aria-valuemax="100" aria-valuenow="3"
+                                        tabindex="0">3</span>
+                                    <button class="seed-btn" id="seed-inc" type="button"
+                                        aria-label="Increase node distance">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="mode-note">Parameters come from ParameterDefinitions.json metadata and are
+                        passed to the Lua script — nothing is generated in this page.</p>
+                    <button id="run-case" class="btn btn--primary btn--block" type="button">Execute comparison</button>
+                </div>
+
+                <div id="panel-custom" class="mode-panel" role="tabpanel" aria-labelledby="tab-custom" hidden>
+                    <div class="editor-grid">
+                        <div class="editor">
+                            <div class="editor-head">
+                                <label class="label" for="source-direct">Native mode · Lua script</label>
+                                <label class="upload" for="file-direct">Upload .lua<input id="file-direct" type="file"
+                                        accept=".lua,.txt"></label>
+                            </div>
+                            <textarea id="source-direct" spellcheck="false"
+                                placeholder="Paste the Lua script for native execution…"></textarea>
+                        </div>
+                        <div class="editor">
+                            <div class="editor-head">
+                                <label class="label" for="source-bridge">Network mode · Lua script</label>
+                                <label class="upload" for="file-bridge">Upload .lua<input id="file-bridge" type="file"
+                                        accept=".lua,.txt"></label>
+                            </div>
+                            <textarea id="source-bridge" spellcheck="false"
+                                placeholder="Paste the Lua script for network execution…"></textarea>
+                        </div>
+                    </div>
+                    <div class="custom-foot">
+                        <p class="mode-note">Scripts are sent to the Engine for execution (Network mode via
+                            <code>/api/execute_script</code>). The Engine enforces a whitelist sandbox — only
+                            <code>base, math, table, string</code> libraries are loaded.</p>
+                        <button id="run-custom" class="btn btn--primary" type="button">Execute script</button>
+                    </div>
+                </div>
+
+                <p class="status" id="status" role="status" aria-live="polite">
+                    <span class="label">Engine status</span>
+                    <span id="status-message">Connect the Engine to load available Lua scripts.</span>
+                    <span class="status-job" id="status-job" hidden></span>
+                </p>
+
+                <div class="panes">
+                    <section class="pane">
+                        <header class="pane-head">
+                            <h3>Direct OGDF · 2D reference</h3>
+                            <span class="label">Engine output</span>
+                        </header>
+                        <div class="pane-body" id="graph-direct"></div>
+                    </section>
+                    <section class="pane pane--dark">
+                        <header class="pane-head">
+                            <h3>OGDF via BRIDGE → GAV-VR</h3>
+                            <span class="label">Engine output</span>
+                        </header>
+                        <div class="pane-body" id="graph-bridge"></div>
+                    </section>
+                </div>
+
+                <div class="panel-grid">
+                    <div class="panel">
+                        <div class="panel-head"><span class="panel-title">What to compare</span></div>
+                        <div class="check-rows" id="checks-list"></div>
+                        <p class="panel-note">Layouts may differ between engines or runs; the claim to verify is that
+                            the same graph, algorithm, and settings produce a consistent result through both paths.</p>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-head">
+                            <span class="panel-title">Run stages</span>
+                            <span class="stages-summary" id="stages-summary" hidden></span>
+                        </div>
+                        <div class="check-rows" id="stages-list"></div>
+                        <p class="panel-note">Stages are reported by the runner while your job progresses. No timings
+                            are invented in the browser — published numbers come from the published experiments.</p>
+                    </div>
+                </div>
+
+                <div class="codeblock" data-copy-scope>
+                    <div class="codeblock-head">
+                        <div class="tabs tabs--accent" role="tablist" aria-label="Code path">
+                            <button class="tab is-active" id="tab-cxx" type="button">Path A · C++ direct</button>
+                            <button class="tab" id="tab-lua" type="button">Path B · via BRIDGE</button>
+                        </div>
+                        <button class="copy-btn" type="button" data-copy aria-label="Copy code">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <rect x="5" y="5" width="9" height="9" stroke="currentColor" stroke-width="1.5" />
+                                <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                            </svg>
+                            <span data-copy-label>Copy</span>
+                        </button>
+                    </div>
+                    <pre><code id="code-view"></code></pre>
+                </div>
+
+                <div class="record" data-copy-scope>
+                    <div class="record-head">
+                        <button class="record-toggle" id="record-toggle" type="button" aria-expanded="false"
+                            aria-controls="record-body">
+                            <span class="record-label-wrap"><span class="record-chevron"
+                                    aria-hidden="true">›</span><span id="record-label">Run record</span></span>
+                        </button>
+                        <span class="record-hint" id="record-hint">reproduce this run</span>
+                        <button class="copy-btn" type="button" data-copy aria-label="Copy run record">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <rect x="5" y="5" width="9" height="9" stroke="currentColor" stroke-width="1.5" />
+                                <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                            </svg>
+                            <span data-copy-label>Copy</span>
+                        </button>
+                    </div>
+                    <pre><code class="record-body" id="record-body"></code></pre>
+                </div>
+
+                <details class="contract">
+                    <summary>Engine integration contract</summary>
+                    <div class="contract-grid">
+                        <div>
+                            <p class="label">Endpoint</p>
+                            <p><code>POST /api/execute_script</code> — the Engine's single documented route
+                                (mirroring the C++ ExecutionController). The request carries the Lua script name,
+                                the input graph, and script parameters.
+                            </p>
+                            <p>Operational parameters per <code>NetworkConfiguration.json</code>:
+                                <code>timeout: 30</code> seconds and <code>retryCount: 3</code> for robustness
+                                against transient network instability.
+                            </p>
+                            <p>Native mode bypasses HTTP entirely: the C# NativeBridge imports
+                                <code>InitializeBindings</code>, <code>ExecuteScript</code>, and
+                                <code>FreeExecutionResponse</code> via P/Invoke.
+                            </p>
+                        </div>
+                        <div>
+                            <p class="label">Request / response shape</p>
+                            <p>Request: <code>{ "script", "input", "params" }</code> — e.g.
+                                <code>{ "script": "hierarchical.lua", "input": "n100e100.graphml",
+                                "params": { "layerDistance": 3.0 } }</code>.
+                            </p>
+                            <p>Response: execution results with the output graph (nodes with
+                                <code>x, y, z</code> coordinates and edges). Large outputs are transmitted via a
+                                Base64 chunking protocol (<code>MAX_CHUNK_DATA_SIZE</code> = 1 MB).
+                            </p>
+                            <p>On AWS, the API Gateway fronts the EC2-hosted Engine with HTTPS and
+                                IAM authorization; clients sign requests via SigV4. The Engine enforces a
+                                whitelist sandbox (only <code>base, math, table, string</code> libraries) and a
+                                2000 ms execution timeout per script.
+                            </p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="about">
+                    <summary>About this demo</summary>
+                    <p>
+                        Both panes render only the graph data the Engine returns; until the Engine is connected
+                        they stay empty — that is the correct state, and the page ships no sample graphs. Every
+                        output a reviewer sees was therefore produced by the published pipeline: the same Lua
+                        script executed through the BRIDGE Engine in Native (P/Invoke) or Network (REST) mode,
+                        with node coordinates and edges returned to this page unmodified. The Engine enforces a
+                        whitelist sandbox and a fresh Lua state per execution.
+                    </p>
+                </details>
+            </div>
+        </section>
+
+        <!-- ============ ARCHITECTURE ============ -->
+        <section id="architecture" class="band">
+            <div class="container">
+                <div class="section-head">
+                    <p class="eyebrow">Architecture</p>
+                    <h2>What BRIDGE actually is</h2>
+                    <p class="lead">
+                        BRIDGE is a hybrid integration architecture, not a second implementation of OGDF. It uses a
+                        three-layered approach: (1) an <strong>Automatic Binding Generation Tool</strong> that parses
+                        OGDF headers via LibClang AST analysis and generates sol2/Lua bindings from YAML configuration,
+                        (2) a <strong>BRIDGE Engine</strong> with dual execution modes — Native Interface (P/Invoke for
+                        low-latency local execution) and Network Interface (cloud offloading for compute-intensive
+                        tasks), and (3) a <strong>C# Client</strong> in GAV-VR managing execution strategies and UI.
+                        Thread-local Lua state (TLS) ensures memory safety and concurrency; a strict whitelist policy
+                        enforces security.
+                    </p>
+                </div>
+                <figure class="figure">
+                    <svg viewBox="0 0 980 260" role="img"
+                        aria-label="BRIDGE architecture diagram showing three layers: Offline Codegen (LibClang AST analysis, YAML config, sol2/Lua bindings), BRIDGE Engine with dual execution (Native Interface via P/Invoke for local low-latency, Network Interface via REST for cloud offloading), and GAV-VR C# Client (execution strategy, UI). Thread-local Lua state and whitelist security span both execution paths.">
+                        <g font-family="'IBM Plex Mono', monospace">
+                            <!-- Offline Codegen Layer -->
+                            <rect x="20" y="30" width="300" height="80" fill="#f5f5f4" stroke="#a8a29e"
+                                stroke-width="0.5" rx="4" />
+                            <text x="170" y="55" text-anchor="middle" fill="#1c1917"
+                                font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600">Offline
+                                Codegen</text>
+                            <text x="170" y="75" text-anchor="middle" fill="#57534e" font-size="11">LibClang AST
+                                Analysis</text>
+                            <text x="170" y="90" text-anchor="middle" fill="#57534e" font-size="11">YAML Config →
+                                sol2/Lua Bindings</text>
+                            <text x="170" y="105" text-anchor="middle" fill="#0f766e" font-size="10"
+                                font-weight="500">Automated — no manual wrappers</text>
+
+                            <!-- BRIDGE Engine Layer -->
+                            <rect x="350" y="30" width="600" height="160" fill="#ffffff" stroke="#0f766e"
+                                stroke-width="1" rx="4" />
+                            <text x="650" y="55" text-anchor="middle" fill="#0f766e"
+                                font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600">BRIDGE
+                                Engine</text>
+
+                            <!-- Native Interface -->
+                            <rect x="380" y="70" width="250" height="100" fill="#ccfbf1" stroke="#0f766e"
+                                stroke-width="0.5" rx="4" />
+                            <text x="505" y="92" text-anchor="middle" fill="#134e4a"
+                                font-family="'Space Grotesk', sans-serif" font-size="13" font-weight="600">Native
+                                Interface</text>
+                            <text x="505" y="112" text-anchor="middle" fill="#57534e" font-size="11">P/Invoke (C# ↔
+                                C++)</text>
+                            <text x="505" y="127" text-anchor="middle" fill="#57534e" font-size="11">Low-latency local
+                                execution</text>
+                            <text x="505" y="142" text-anchor="middle" fill="#57534e" font-size="11">Thread-local Lua
+                                state (TLS)</text>
+
+                            <!-- Network Interface -->
+                            <rect x="660" y="70" width="250" height="100" fill="#ccfbf1" stroke="#0f766e"
+                                stroke-width="0.5" rx="4" />
+                            <text x="785" y="92" text-anchor="middle" fill="#134e4a"
+                                font-family="'Space Grotesk', sans-serif" font-size="13" font-weight="600">Network
+                                Interface</text>
+                            <text x="785" y="112" text-anchor="middle" fill="#57534e" font-size="11">REST API</text>
+                            <text x="785" y="127" text-anchor="middle" fill="#57534e" font-size="11">Cloud
+                                offloading</text>
+                            <text x="785" y="142" text-anchor="middle" fill="#57534e" font-size="11">Whitelist security
+                                policy</text>
+
+                            <!-- Arrow from Codegen to Engine -->
+                            <line x1="320" y1="70" x2="350" y2="70" stroke="#0f766e" stroke-width="1.5"
+                                marker-end="url(#flow-arrow-1)" />
+
+                            <!-- GAV-VR Client -->
+                            <rect x="380" y="185" width="530" height="50" fill="#f5f5f4" stroke="#a8a29e"
+                                stroke-width="0.5" rx="4" />
+                            <text x="645" y="208" text-anchor="middle" fill="#1c1917"
+                                font-family="'Space Grotesk', sans-serif" font-size="13" font-weight="600">GAV-VR C#
+                                Client</text>
+                            <text x="645" y="222" text-anchor="middle" fill="#57534e" font-size="11">Execution Strategy
+                                Selection · UI Control · Graph Rendering</text>
+
+                            <!-- Arrows from Engine to Client -->
+                            <line x1="505" y1="170" x2="505" y2="185" stroke="#0f766e" stroke-width="1.5"
+                                marker-end="url(#flow-arrow-1)" />
+                            <line x1="785" y1="170" x2="785" y2="185" stroke="#0f766e" stroke-width="1.5"
+                                marker-end="url(#flow-arrow-1)" />
+
+                            <!-- Security/Memory annotations -->
+                            <text x="20" y="180" fill="#0f766e" font-size="10" font-weight="500">🔒 Whitelist policy ·
+                                🧵 Thread-local Lua state (TLS)</text>
+                        </g>
+                        <defs>
+                            <marker id="flow-arrow-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0,0 L8,4 L0,8 Z" fill="#0f766e" />
+                            </marker>
+                        </defs>
+                    </svg>
+                    <figcaption class="label">Figure 1 · The BRIDGE architecture: offline binding generation, dual
+                        execution engine (native P/Invoke + network REST), and GAV-VR client. Thread-local Lua state and
+                        whitelist security span both execution paths.</figcaption>
+                </figure>
+
+                <p class="section-footnote">
+                    sol2 is the C++/Lua binding library the generated module is built on — it is the mechanism,
+                    not the research claim. The claim is that selected OGDF functionality becomes callable from
+                    GAV-VR's Lua runtime with its parameters passed through unchanged, and that the resulting
+                    layouts are identical to what OGDF produces directly. BRIDGE
+                    uses thread-local Lua state (TLS) for memory safety, and enforces a whitelist
+                    security policy. Dual execution modes (Native P/Invoke + Network REST) share the same
+                    automated binding layer.
+                </p>
+            </div>
+        </section>
+
+        <!-- ============ REPRODUCE ============ -->
+        <section id="reproduce" class="band band--muted">
+            <div class="container">
+                <div class="section-head">
+                    <p class="eyebrow">Reproduce</p>
+                    <h2>Four commands from clone to render</h2>
+                    <p class="lead">
+                        Everything a reviewer needs is in the repository: pinned dependencies, the example graphs,
+                        and the exact commands below. No headset is required for any verification step.
+                    </p>
+                </div>
+                <div class="steps">
+                    <div class="step">
+                        <span class="step-num">Step 1</span>
+                        <div>
+                            <h3>Build BRIDGE</h3>
+                            <p>Clone the repository and compile the BRIDGE components with the bootstrap script.</p>
+                            <div class="codeblock codeblock--flat" data-copy-scope>
+                                <div class="codeblock-head"><span class="terminal-dots" aria-hidden="true"><span class="terminal-dot terminal-dot--red"></span><span class="terminal-dot terminal-dot--yellow"></span><span class="terminal-dot terminal-dot--green"></span></span><span class="codeblock-title">terminal</span>
+                                    <button class="copy-btn" type="button" data-copy aria-label="Copy command"><svg
+                                            width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                            <rect x="5" y="5" width="9" height="9" stroke="currentColor"
+                                                stroke-width="1.5" />
+                                            <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                                        </svg><span data-copy-label>Copy</span></button>
+                                </div>
+                                <pre><code><span class="t-prompt">$</span> git clone &lt;repository-url&gt; &amp;&amp; cd bridge
+<span class="t-prompt">$</span> cp .env.example .env
+<span class="t-comment"># edit .env: LIBRARY_INCLUDE_PATH, WRAPPER_DIR, UNITY_PROJECT_PATH</span>
+<span class="t-comment"># Windows (PowerShell):</span>
+<span class="t-prompt">$</span> ./bootstrap.ps1 -BuildType Release -InstallDeps
+<span class="t-comment"># Linux:</span>
+<span class="t-prompt">$</span> sudo ./bootstrap.sh --build-type Release --install-deps</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">Step 2</span>
+                        <div>
+                            <h3>Verify the Engine build</h3>
+                            <p>Confirm the build artifacts exist: Engine.dll (native mode) or Engine.exe (network server).</p>
+                            <div class="codeblock codeblock--flat" data-copy-scope>
+                                <div class="codeblock-head"><span class="terminal-dots" aria-hidden="true"><span class="terminal-dot terminal-dot--red"></span><span class="terminal-dot terminal-dot--yellow"></span><span class="terminal-dot terminal-dot--green"></span></span><span class="codeblock-title">terminal</span>
+                                    <button class="copy-btn" type="button" data-copy aria-label="Copy command"><svg
+                                            width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                            <rect x="5" y="5" width="9" height="9" stroke="currentColor"
+                                                stroke-width="1.5" />
+                                            <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                                        </svg><span data-copy-label>Copy</span></button>
+                                </div>
+                                <pre><code><span class="t-comment"># Native mode artifact (DLL, deployed to Unity Plugins):</span>
+<span class="t-prompt">$</span> ls build/Engine.dll
+<span class="t-comment"># Network mode artifact (standalone server):</span>
+<span class="t-prompt">$</span> ls build/Engine.exe</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">Step 3</span>
+                        <div>
+                            <h3>Run it through BRIDGE → GAV-VR</h3>
+                            <p>Native mode: the Engine.dll is loaded by GAV-VR via P/Invoke (no CLI needed). Network
+                                mode: start the Engine server, then point GAV-VR at it. A headset is optional —
+                                GAV-VR also renders in a normal desktop window.</p>
+                            <div class="codeblock codeblock--flat" data-copy-scope>
+                                <div class="codeblock-head"><span class="terminal-dots" aria-hidden="true"><span class="terminal-dot terminal-dot--red"></span><span class="terminal-dot terminal-dot--yellow"></span><span class="terminal-dot terminal-dot--green"></span></span><span class="codeblock-title">terminal</span>
+                                    <button class="copy-btn" type="button" data-copy aria-label="Copy command"><svg
+                                            width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                            <rect x="5" y="5" width="9" height="9" stroke="currentColor"
+                                                stroke-width="1.5" />
+                                            <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                                        </svg><span data-copy-label>Copy</span></button>
+                                </div>
+                                <pre><code><span class="t-comment"># Native mode: Engine.dll is auto-deployed to the Unity project</span>
+<span class="t-comment"># and loaded via P/Invoke by the NativeExecutor — no CLI command needed.</span>
+
+<span class="t-comment"># Network mode: start the Engine server:</span>
+<span class="t-prompt">$</span> ./Engine.exe --host 0.0.0.0 --port 8000
+
+<span class="t-comment"># In GAV-VR: Options Panel → Execution Mode → Native/Network</span>
+<span class="t-comment"># NetworkConfiguration.json: { "host": "localhost", "port": 8000, "endpoint": "/api/execute_script" }</span>
+
+<span class="t-comment"># Optional Docker (exposes port 8000):</span>
+<span class="t-prompt">$</span> docker run --rm -p 8000:8000 -v $PWD/data:/data bridge-engine:latest</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">Step 4</span>
+                        <div>
+                            <h3>Or verify against the hosted runner</h3>
+                            <p>The Engine's Network mode exposes a REST API. Send a script-execution request with curl
+                                On AWS, the API Gateway endpoint requires IAM/SigV4-signed requests.</p>
+                            <div class="codeblock codeblock--flat" data-copy-scope>
+                                <div class="codeblock-head"><span class="terminal-dots" aria-hidden="true"><span class="terminal-dot terminal-dot--red"></span><span class="terminal-dot terminal-dot--yellow"></span><span class="terminal-dot terminal-dot--green"></span></span><span class="codeblock-title">terminal</span>
+                                    <button class="copy-btn" type="button" data-copy aria-label="Copy command"><svg
+                                            width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                            <rect x="5" y="5" width="9" height="9" stroke="currentColor"
+                                                stroke-width="1.5" />
+                                            <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                                        </svg><span data-copy-label>Copy</span></button>
+                                </div>
+                                <pre><code><span class="t-prompt">$</span> curl -X POST &lt;engine-host&gt;:8000/api/execute_script \
+     -H 'Content-Type: application/json' \
+     -d '{"script": "hierarchical.lua", "input": "n100e100.graphml", "params": {"layerDistance": 3.0, "nodeDistance": 3.0}}'
+<span class="t-comment"># AWS API Gateway (IAM SigV4 signing required):</span>
+<span class="t-prompt">$</span> curl -X POST &lt;gateway-host&gt;/api/execute_script \
+     -H 'Authorization: AWS4-HMAC-SHA256 ...' -d '...'</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="repro-rows">
+                <div class="repro-row"><span class="label">Native mode</span><span>Local P/Invoke execution for
+                        low-latency layout.</span></div>
+                <div class="repro-row"><span class="label">Network mode</span><span>Cloud offloading via REST for
+                        compute-intensive tasks.</span></div>
+                <div class="repro-row"><span class="label">Output</span><span>Graph nodes and edges are the primary
+                        result. Large payloads are transmitted via Base64 chunking (1 MB chunks). Failure
+                        details surfaced on error.</span></div>
+                <div class="repro-row"><span class="label">Safety</span><span>Whitelist sandbox loads only
+                        <code>base, math, table, string</code> libraries; thread-local Lua state (TLS) isolates
+                        concurrent executions; 2000 ms execution timeout.</span></div>
+            </div>
+        </section>
+
+        <!-- ============ RESOURCES ============ -->
+        <section id="resources" class="band">
+            <div class="container resources-grid">
+                <div>
+                    <div class="section-head">
+                        <p class="eyebrow">Resources</p>
+                        <h2>Links and code</h2>
+                    </div>
+                    <div class="links" id="links-list"></div>
+                </div>
+                <div>
+                    <div class="section-head">
+                        <p class="eyebrow">Cite</p>
+                        <h2>BibTeX</h2>
+                    </div>
+                    <div class="codeblock" data-copy-scope>
+                        <div class="codeblock-head"><span class="codeblock-title">igidov2025bridge.bib</span>
+                            <button class="copy-btn" type="button" data-copy aria-label="Copy BibTeX"><svg width="12"
+                                    height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <rect x="5" y="5" width="9" height="9" stroke="currentColor" stroke-width="1.5" />
+                                    <path d="M11 5V2H2v9h3" stroke="currentColor" stroke-width="1.5" />
+                                </svg><span data-copy-label>Copy</span></button>
+                        </div>
+                        <pre><code id="bibtex-code"></code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <span class="footer-brand">BRIDGE · University of Konstanz</span>
+            <span class="footer-note">Orkhan Igidov · OGDF → BRIDGE →
+                GAV-VR</span>
+        </div>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

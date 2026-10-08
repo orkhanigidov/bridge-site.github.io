@@ -1,0 +1,54 @@
+/**
+ * Single place to configure the page before publishing.
+ */
+
+export const RUNNER = {
+    // Paste the generated API secret key here to pre-fill the demo field.
+    // Leave empty to let visitors enter their own key in the demo section instead.
+    // Never commit a real key to source control.
+    defaultApiKey: '',
+    pollIntervalMs: 1500,  // delay between job-status polls
+    pollTimeoutMs: 180000, // give up polling after 3 minutes
+};
+
+export const PARAMS = {
+    // Thesis Appendix B.1: ParameterDefinitions.json
+    layerDistance: { min: 1, max: 100, step: 1, default: 3 },
+    nodeDistance: { min: 1, max: 100, step: 1, default: 3 },
+};
+
+/** Guidance rows under "What to compare" — the claims the side-by-side lets a reviewer verify. */
+export const CHECKS = [
+    'Same graph topology — identical node and edge sets in both panes.',
+    'Same algorithm and parameters — the case pins the OGDF layout call.',
+    'Same coordinate semantics — positions returned by the runner, drawn unmodified.',
+    'Deterministic reruns — the Engine re-binds a fresh Lua state per execution, eliminating side effects.',
+];
+
+/** Ordered stages the runner reports while a job progresses. */
+export const STAGES = [
+    { id: 'queued', label: 'Queued' },
+    { id: 'compiling', label: 'Compiling C++' },
+    { id: 'running', label: 'Running layout' },
+    { id: 'transferring', label: 'Transferring result' },
+    { id: 'succeeded', label: 'Done' },
+];
+
+export const LINKS = [
+    { label: 'OGDF — Open Graph Drawing Framework', href: 'https://www.ogdf.uni-osnabrueck.de', note: 'C++ framework supplying the layout algorithms' },
+    { label: 'sol2', href: 'https://github.com/ThePhD/sol2', note: 'C++/Lua binding library the generated module builds on' },
+    { label: 'GAV-VR', href: 'https://github.com/orkhanigidov/gav-vr', note: 'VR graph viewer (Unity/C#)' },
+    { label: 'BRIDGE source repository', href: 'https://github.com/orkhanigidov/bridge', note: 'Code + Docker runner + binding generator' },
+    { label: 'Thesis PDF', href: 'https://github.com/orkhanigidov/bridge/releases', note: 'Master thesis PDF and test data' },
+];
+
+export const BIBTEX = `@mastersthesis{igidov2025bridge,
+  author    = {Igidov, Orkhan},
+  title     = {Connecting {OGDF} to {GAV-VR} -- Design Concept and Realisation},
+  school    = {University of Konstanz},
+  year      = {2025},
+  note      = {Master Thesis, Department of Computer and Information Science, Life Science Informatics},
+  type      = {Master's thesis},
+  examiner  = {Prof. Dr. Falk Schreiber (1st examiner), Prof. Dr. Oliver Deussen (2nd examiner)},
+  supervisor = {Dr. Karsten Klein}
+}`;
