@@ -73,8 +73,8 @@
                     <div>
                         <p class="eyebrow">Live comparison</p>
                         <h2>One case, two paths, side by side</h2>
-                        <p class="lead">Connect the Engine (Native or Network mode) and pick a Lua script, or paste your
-                            own script. The graphs below appear only after the Engine returns graph data.</p>
+                        <p class="lead">Connect the Engine and pick a predefined C++/Lua pair, or paste your own.
+                            The graphs below appear only after the Engine returns graph data.</p>
                     </div>
                     <div class="runner-url">
                         <label class="label" for="runner-url">API secret key</label>
@@ -90,20 +90,13 @@
                     <p class="mode-note">The live demo requires JavaScript. All other sections work without it.</p>
                 </noscript>
 
-                <div class="tabs" role="tablist" aria-label="Execution mode">
-                    <button id="tab-case" class="tab is-active" role="tab" aria-selected="true"
-                        aria-controls="panel-case" type="button">Native mode</button>
-                    <button id="tab-custom" class="tab" role="tab" aria-selected="false" aria-controls="panel-custom"
-                        type="button">Network mode</button>
-                </div>
-
-                <div id="panel-case" class="mode-panel" role="tabpanel" aria-labelledby="tab-case">
-                    <label class="label" for="case-select">Lua script (from Scripts/ directory)</label>
+                <div id="panel-case" class="mode-panel">
+                    <label class="label" for="case-select">Script pair (from the Engine)</label>
                     <select id="case-select">
                         <option value="">Connect the Engine to load available scripts</option>
                     </select>
 
-                    <div class="params-row">
+                    <div class="params-row" id="params-row" hidden>
                         <div class="control">
                             <label class="label" for="nodes">Layer distance</label>
                             <div class="control-row">
@@ -126,35 +119,32 @@
                             </div>
                         </div>
                     </div>
-                    <p class="mode-note">Parameters come from ParameterDefinitions.json metadata and are
-                        passed to the Lua script — nothing is generated in this page.</p>
-                    <button id="run-case" class="btn btn--primary btn--block" type="button">Execute comparison</button>
-                </div>
+                    <p class="mode-note" id="params-note" hidden>Parameters come from ParameterDefinitions.json
+                        metadata and are passed to the Lua script — nothing is generated in this page.</p>
 
-                <div id="panel-custom" class="mode-panel" role="tabpanel" aria-labelledby="tab-custom" hidden>
                     <div class="editor-grid">
                         <div class="editor">
                             <div class="editor-head">
-                                <label class="label" for="source-direct">Native mode · Lua script</label>
-                                <label class="upload" for="file-direct">Upload .lua<input id="file-direct" type="file"
-                                        accept=".lua,.txt"></label>
+                                <label class="label" for="source-direct">C++ (direct OGDF)</label>
+                                <label class="upload" for="file-direct">Upload .cpp<input id="file-direct"
+                                        type="file" accept=".cpp,.cc,.cxx,.h,.hpp,.txt"></label>
                             </div>
                             <textarea id="source-direct" spellcheck="false"
-                                placeholder="Paste the Lua script for native execution…"></textarea>
+                                placeholder="Paste the C++ code for direct OGDF execution…"></textarea>
                         </div>
                         <div class="editor">
                             <div class="editor-head">
-                                <label class="label" for="source-bridge">Network mode · Lua script</label>
-                                <label class="upload" for="file-bridge">Upload .lua<input id="file-bridge" type="file"
-                                        accept=".lua,.txt"></label>
+                                <label class="label" for="source-bridge">Lua script (via BRIDGE)</label>
+                                <label class="upload" for="file-bridge">Upload .lua<input id="file-bridge"
+                                        type="file" accept=".lua,.txt"></label>
                             </div>
                             <textarea id="source-bridge" spellcheck="false"
-                                placeholder="Paste the Lua script for network execution…"></textarea>
+                                placeholder="Paste the Lua script for execution through BRIDGE…"></textarea>
                         </div>
                     </div>
                     <div class="custom-foot">
-                        <p class="mode-note">Scripts are sent to the Engine for execution (Network mode via
-                            <code>/api/execute_script</code>). The Engine enforces a whitelist sandbox — only
+                        <p class="mode-note">Both sources are sent to the Engine for execution via
+                            <code>/api/execute_script</code>. The Engine enforces a whitelist sandbox — only
                             <code>base, math, table, string</code> libraries are loaded.</p>
                         <button id="run-custom" class="btn btn--primary" type="button">Execute script</button>
                     </div>
@@ -162,7 +152,7 @@
 
                 <p class="status" id="status" role="status" aria-live="polite">
                     <span class="label">Engine status</span>
-                    <span id="status-message">Connect the Engine to load available Lua scripts.</span>
+                    <span id="status-message">Connect the Engine to load available script pairs.</span>
                     <span class="status-job" id="status-job" hidden></span>
                 </p>
 

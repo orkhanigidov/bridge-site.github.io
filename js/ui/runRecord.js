@@ -24,6 +24,12 @@ export function createRunRecord({ toggle, body, hint }) {
             hint.hidden = false;
             this.line(`${new Date().toISOString()} — job submitted`, 'muted');
             this.line(`mode: ${payload.mode}${payload.caseId ? ` · caseId: ${payload.caseId}` : ''}`);
+            if (payload.directSource !== undefined) {
+                this.line(`directSource: ${payload.directSource.length} chars`);
+            }
+            if (payload.bridgeSource !== undefined) {
+                this.line(`bridgeSource: ${payload.bridgeSource.length} chars`);
+            }
             if (payload.params) {
                 this.line(`params: ${JSON.stringify(payload.params)}`);
             }

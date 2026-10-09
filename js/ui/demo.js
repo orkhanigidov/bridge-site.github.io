@@ -4,7 +4,6 @@
  */
 import { CHECKS, STAGES, PARAMS } from '../config/site.js';
 import { renderGraph } from '../render/graphView.js';
-import { initModeTabs } from './modeTabs.js';
 import { initCodeTabs } from './codeTabs.js';
 import { createRunRecord } from './runRecord.js';
 
@@ -13,13 +12,13 @@ export function initDemo(root, client, config) {
         runnerUrl: root.querySelector('#runner-url'),
         loadCases: root.querySelector('#load-cases'),
         caseSelect: root.querySelector('#case-select'),
+        paramsRow: root.querySelector('#params-row'),
+        paramsNote: root.querySelector('#params-note'),
         nodes: root.querySelector('#nodes'),
         nodesVal: root.querySelector('#nodes-val'),
         seedDec: root.querySelector('#seed-dec'),
         seedInc: root.querySelector('#seed-inc'),
         seedVal: root.querySelector('#seed-val'),
-        seedRand: root.querySelector('#seed-rand'),
-        runCase: root.querySelector('#run-case'),
         runCustom: root.querySelector('#run-custom'),
         sourceDirect: root.querySelector('#source-direct'),
         sourceBridge: root.querySelector('#source-bridge'),
@@ -45,7 +44,7 @@ export function initDemo(root, client, config) {
         codeView: root.querySelector('#code-view'),
     });
 
-    const state = { mode: 'case', busy: false, caseId: '', cases: new Map(), startedAt: 0 };
+    const state = { busy: false, caseId: '', cases: new Map(), startedAt: 0 };
 
     if (config.defaultApiKey) els.runnerUrl.value = config.defaultApiKey;
 
@@ -108,8 +107,6 @@ export function initDemo(root, client, config) {
         state.busy = busy;
         els.loadCases.disabled = busy;
         els.runCustom.disabled = busy;
-        els.runCase.disabled = busy || !state.caseId;
-        els.runCase.textContent = busy ? 'Executing script…' : 'Execute comparison';
         els.runCustom.textContent = busy ? 'Executing script…' : 'Execute script';
     };
 
@@ -160,8 +157,24 @@ export function initDemo(root, client, config) {
     /* ---------- case loading ---------- */
 
     function showCaseSources(testCase) {
-        codeTabs.setSource('direct', testCase?.directSource || '');
-        codeTabs.setSource('bridge', testCase?.bridgeSource || '');
+        els.sourceDirect.value = testCase?.directSource || '';
+        els.sourceBridge.value = testCase?.bridgeSource || '';
+        codeTabs.setSource('direct', els.sourceDirect.value);
+        codeTabs.setSource('bridge', els.sourceBridge.value);
+    }
+
+    function applyCaseSelection() {
+        state.caseId = els.caseSelect.value;
+        const testCase = state.cases.get(state.caseId);
+        const predefined = Boolean(testCase);
+        // Predefined pairs are read-only in the editors; custom pairs are editable.
+        els.sourceDirect.readOnly = predefined;
+        els.sourceBridge.readOnly = predefined;
+        els.fileDirect.disabled = predefined;
+        els.fileBridge.disabled = predefined;
+        els.paramsRow.hidden = !predefined;
+        els.paramsNote.hidden = !predefined;
+        showCaseSources(testCase);
     }
 
     async function loadCases() {
@@ -173,7 +186,7 @@ export function initDemo(root, client, config) {
             els.caseSelect.textContent = '';
             const placeholder = document.createElement('option');
             placeholder.value = '';
-            placeholder.textContent = cases.length ? 'Choose a script' : 'Engine is connected, but returned no scripts';
+            placeholder.textContent = cases.length ? 'Custom script (paste or upload below)' : 'Engine is connected, but returned no scripts';
             els.caseSelect.append(placeholder);
             state.cases = new Map(cases.map((testCase) => [testCase.id, testCase]));
             for (const testCase of cases) {
@@ -183,11 +196,10 @@ export function initDemo(root, client, config) {
                 els.caseSelect.append(option);
             }
 
-            state.caseId = cases[0]?.id || '';
-            els.caseSelect.value = state.caseId;
-            showCaseSources(state.cases.get(state.caseId));
+            els.caseSelect.value = '';
+            applyCaseSelection();
             setBusy(false);
-            setStatus(cases.length ? 'Scripts loaded from the Engine.' : 'Engine is connected, but no scripts were returned.');
+            setStatus(cases.length ? 'Scripts loaded from the Engine. Pick a predefined pair or paste your own.' : 'Engine is connected, but no scripts were returned.');
         } catch (error) {
             setBusy(false);
             setStatus(`Could not load cases: ${error.message}`);
@@ -196,25 +208,20 @@ export function initDemo(root, client, config) {
 
     els.loadCases.addEventListener('click', () => loadCases());
     els.caseSelect.addEventListener('change', () => {
-        state.caseId = els.caseSelect.value;
-        els.runCase.disabled = state.busy || !state.caseId;
-        showCaseSources(state.cases.get(state.caseId));
+        applyCaseSelection();
     });
 
     /* ---------- running ---------- */
 
     async function run() {
         const apiKey = els.runnerUrl.value;
-        if (state.mode === 'case' && !state.caseId) {
-            setStatus('Load and choose a Lua script before running.');
-            return;
-        }
-        if (state.mode === 'custom' && (!els.sourceDirect.value.trim() || !els.sourceBridge.value.trim())) {
-            setStatus('Add the Lua scripts for both execution modes to compare.');
+        const predefined = Boolean(state.caseId);
+        if (!predefined && (!els.sourceDirect.value.trim() || !els.sourceBridge.value.trim())) {
+            setStatus('Add both the C++ code and the Lua script to compare.');
             return;
         }
 
-        const payload = state.mode === 'case'
+        const payload = predefined
             ? { mode: 'case', caseId: state.caseId, params: currentParams() }
             : { mode: 'custom', directSource: els.sourceDirect.value, bridgeSource: els.sourceBridge.value };
 
@@ -246,7 +253,7 @@ export function initDemo(root, client, config) {
 
             renderStages(STAGES.map((stage) => stage.id).reduce((set, id) => set.add(id), new Set()), null);
             els.stagesSummary.hidden = false;
-            els.stagesSummary.textContent = `${payload.mode === 'case' ? payload.caseId : 'network script'} · succeeded`;
+            els.stagesSummary.textContent = `${predefined ? payload.caseId : 'custom script'} · succeeded`;
             renderGraph(els.graphDirect, result.directGraph);
             renderGraph(els.graphBridge, result.bridgeGraph);
             const waitedS = (Date.now() - state.startedAt) / 1000;
@@ -263,7 +270,6 @@ export function initDemo(root, client, config) {
         }
     }
 
-    els.runCase.addEventListener('click', () => run());
     els.runCustom.addEventListener('click', () => run());
 
     /* ---------- custom sources ---------- */
@@ -273,36 +279,20 @@ export function initDemo(root, client, config) {
             const file = input.files?.[0];
             if (file) {
                 textarea.value = await file.text();
-                if (state.mode === 'custom') codeTabs.setSource(path, textarea.value);
+                codeTabs.setSource(path, textarea.value);
             }
             input.value = '';
         });
     }
 
     els.sourceDirect.addEventListener('input', () => {
-        if (state.mode === 'custom') codeTabs.setSource('direct', els.sourceDirect.value);
+        codeTabs.setSource('direct', els.sourceDirect.value);
     });
     els.sourceBridge.addEventListener('input', () => {
-        if (state.mode === 'custom') codeTabs.setSource('bridge', els.sourceBridge.value);
+        codeTabs.setSource('bridge', els.sourceBridge.value);
     });
     bindFileSource(els.fileDirect, els.sourceDirect, 'direct');
     bindFileSource(els.fileBridge, els.sourceBridge, 'bridge');
-
-    initModeTabs({
-        tabCase: root.querySelector('#tab-case'),
-        tabCustom: root.querySelector('#tab-custom'),
-        panelCase: root.querySelector('#panel-case'),
-        panelCustom: root.querySelector('#panel-custom'),
-        onChange: (mode) => {
-            state.mode = mode;
-            if (mode === 'custom') {
-                codeTabs.setSource('direct', els.sourceDirect.value);
-                codeTabs.setSource('bridge', els.sourceBridge.value);
-            } else {
-                showCaseSources(state.cases.get(state.caseId));
-            }
-        },
-    });
 
     renderGraph(els.graphDirect, null);
     renderGraph(els.graphBridge, null);
